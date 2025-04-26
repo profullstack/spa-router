@@ -25,10 +25,54 @@ Or with yarn:
 yarn add @profullstack/spa-router
 ```
 
+## Client-Side Installation
+
+For browser environments, you can use CDNs to import the router directly without npm:
+
+### Using ESM.sh
+
+```html
+<script type="module">
+  import { Router, transitions } from 'https://esm.sh/@profullstack/spa-router@1.0.1';
+  
+  // Initialize router
+  const router = new Router({
+    rootElement: '#app',
+    transition: transitions.fade({ duration: 150 })
+  });
+  
+  // Define routes...
+</script>
+```
+
+### Using jsDelivr
+
+```html
+<script type="module">
+  import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.0.1/+esm';
+  
+  // Initialize router
+  const router = new Router({
+    rootElement: '#app',
+    transition: transitions.fade({ duration: 150 })
+  });
+  
+  // Define routes...
+</script>
+```
+
 ## Basic Usage
 
 ```javascript
+// Using npm package
+// Using npm package
 import { Router, transitions } from '@profullstack/spa-router';
+
+// Or using CDN
+// import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.0.1/+esm';
+
+// Or using CDN
+// import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.0.1/+esm';
 
 // Initialize router
 const router = new Router({
