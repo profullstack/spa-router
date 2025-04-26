@@ -49,7 +49,7 @@ For browser environments, you can use CDNs to import the router directly without
 
 ```html
 <script type="module">
-  import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.0.1/+esm';
+  import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.0.2/+esm';
   
   // Initialize router
   const router = new Router({
@@ -69,10 +69,10 @@ For browser environments, you can use CDNs to import the router directly without
 import { Router, transitions } from '@profullstack/spa-router';
 
 // Or using CDN
-// import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.0.1/+esm';
+// import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.0.2/+esm';
 
 // Or using CDN
-// import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.0.1/+esm';
+// import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.0.2/+esm';
 
 // Initialize router
 const router = new Router({
