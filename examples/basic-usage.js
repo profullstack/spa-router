@@ -1,24 +1,15 @@
 /**
  * Basic usage example for @profullstack/spa-router
+ *
+ * This example demonstrates two ways to initialize the router:
+ * 1. Passing routes directly in the constructor (recommended)
+ * 2. Creating the router first, then registering routes
  */
 
 import { Router, transitions } from '../dist/index.esm.js';
 
-// Initialize router with fade transition
-const router = new Router({
-  rootElement: '#app',
-  transition: transitions.fade({ duration: 150 }),
-  errorHandler: (path) => `
-    <div class="error-page">
-      <h1>404 - Page Not Found</h1>
-      <p>The page "${path}" could not be found.</p>
-      <a href="/" class="back-link">Go back to home</a>
-    </div>
-  `
-});
-
 // Define routes
-router.registerRoutes({
+const routes = {
   '/': {
     view: () => `
       <div class="page home-page">
@@ -83,7 +74,41 @@ router.registerRoutes({
       next();
     }
   }
+};
+
+// APPROACH 1: Initialize router with routes in the constructor (recommended)
+// This ensures routes are registered before any navigation occurs
+const router = new Router({
+  routes, // Pass routes directly in the constructor
+  rootElement: '#app',
+  transition: transitions.fade({ duration: 150 }),
+  errorHandler: (path) => `
+    <div class="error-page">
+      <h1>404 - Page Not Found</h1>
+      <p>The page "${path}" could not be found.</p>
+      <a href="/" class="back-link">Go back to home</a>
+    </div>
+  `
 });
+
+/*
+// APPROACH 2: Create router first, then register routes
+// This approach works but may cause issues if navigation occurs before routes are registered
+const router = new Router({
+  rootElement: '#app',
+  transition: transitions.fade({ duration: 150 }),
+  errorHandler: (path) => `
+    <div class="error-page">
+      <h1>404 - Page Not Found</h1>
+      <p>The page "${path}" could not be found.</p>
+      <a href="/" class="back-link">Go back to home</a>
+    </div>
+  `
+});
+
+// Register routes after creating the router
+router.registerRoutes(routes);
+*/
 
 // Add middleware for logging
 router.use(async (to, from, next) => {

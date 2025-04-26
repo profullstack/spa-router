@@ -69,6 +69,11 @@ export const normalizePath = (path) => {
     path = path.slice(0, -1);
   }
   
+  // Ensure root path is always '/'
+  if (path === '') {
+    path = '/';
+  }
+  
   return path;
 };
 

@@ -360,6 +360,11 @@ export class Router {
       return { ...this.routes[path] };
     }
     
+    // Special case for root path
+    if (path === '/' && this.routes['/']) {
+      return { ...this.routes['/'] };
+    }
+    
     // Check for dynamic routes
     for (const routePath in this.routes) {
       const route = this.routes[routePath];

@@ -1,5 +1,8 @@
 /**
  * Web Components example for @profullstack/spa-router
+ *
+ * This example demonstrates how to use the router with Web Components
+ * and the recommended approach of passing routes directly in the constructor.
  */
 
 import { Router, transitions } from '../dist/index.esm.js';
@@ -202,21 +205,8 @@ customElements.define('about-component', AboutComponent);
 customElements.define('users-component', UsersComponent);
 customElements.define('user-profile-component', UserProfileComponent);
 
-// Initialize router with slide transition
-const router = new Router({
-  rootElement: '#app',
-  transition: transitions.slide({ direction: 'left', duration: 300 }),
-  errorHandler: (path) => `
-    <div class="error-page">
-      <h1>404 - Page Not Found</h1>
-      <p>The page "${path}" could not be found.</p>
-      <a href="/" class="back-link">Go back to home</a>
-    </div>
-  `
-});
-
 // Define routes using web components
-router.registerRoutes({
+const routes = {
   '/': {
     component: 'home-component'
   },
@@ -236,6 +226,20 @@ router.registerRoutes({
       }
     }
   }
+};
+
+// Initialize router with routes in the constructor (recommended approach)
+const router = new Router({
+  routes, // Pass routes directly in the constructor
+  rootElement: '#app',
+  transition: transitions.slide({ direction: 'left', duration: 300 }),
+  errorHandler: (path) => `
+    <div class="error-page">
+      <h1>404 - Page Not Found</h1>
+      <p>The page "${path}" could not be found.</p>
+      <a href="/" class="back-link">Go back to home</a>
+    </div>
+  `
 });
 
 // Add middleware for logging
