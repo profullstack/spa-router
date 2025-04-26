@@ -1,0 +1,29 @@
+{
+  "name": "@profullstack/spa-router",
+  "version": "1.0.1",
+  "description": "Simple SPA router with smooth transitions and Shadow DOM support",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "test": "jest"
+  },
+  "keywords": [
+    "router",
+    "spa",
+    "single-page-application",
+    "web-components"
+  ],
+  "author": "Profullstack, Inc.",
+  "license": "MIT",
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-terser": "^0.4.0",
+    "rollup": "^3.20.0"
+  }
+}
