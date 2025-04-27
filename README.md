@@ -34,7 +34,7 @@ For browser environments, you can use CDNs to import the router directly without
 
 ```html
 <script type="module">
-  import { Router, transitions, renderer } from 'https://esm.sh/@profullstack/spa-router@1.4.0';
+  import { Router, transitions, renderer } from 'https://esm.sh/@profullstack/spa-router@1.5.0';
   
   // Initialize router
   const router = new Router({
@@ -51,7 +51,7 @@ For browser environments, you can use CDNs to import the router directly without
 
 ```html
 <script type="module">
-  import { Router, transitions, renderer } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.4.0/dist/index.esm.js';
+  import { Router, transitions, renderer } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.5.0/dist/index.esm.js';
   
   // Initialize router
   const router = new Router({
@@ -71,10 +71,10 @@ For browser environments, you can use CDNs to import the router directly without
 import { Router, transitions } from '@profullstack/spa-router';
 
 // Or using CDN
-// import { Router, transitions } from 'https://esm.sh/@profullstack/spa-router@1.4.0';
+// import { Router, transitions } from 'https://esm.sh/@profullstack/spa-router@1.5.0';
 
 // Or using jsDelivr
-// import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.4.0/dist/index.esm.js';
+// import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.5.0/dist/index.esm.js';
 
 // Initialize router
 const router = new Router({
