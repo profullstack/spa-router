@@ -6,13 +6,15 @@
 import Router from './router.js';
 import * as transitions from './transitions.js';
 import * as utils from './utils.js';
+import * as renderer from './renderer.js';
 
 // Export the main components
-export { Router, transitions, utils };
+export { Router, transitions, utils, renderer };
 
 // Export a default object for UMD builds
 export default {
   Router,
   transitions,
-  utils
+  utils,
+  renderer
 };

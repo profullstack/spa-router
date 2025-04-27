@@ -12,6 +12,7 @@ A lightweight, feature-rich SPA router with smooth transitions and Shadow DOM su
 - Route guards and middleware
 - Lazy loading support
 - Web component integration
+- Enhanced renderer with component preservation and translation support
 
 ## Installation
 
@@ -33,12 +34,13 @@ For browser environments, you can use CDNs to import the router directly without
 
 ```html
 <script type="module">
-  import { Router, transitions } from 'https://esm.sh/@profullstack/spa-router@1.0.3';
+  import { Router, transitions, renderer } from 'https://esm.sh/@profullstack/spa-router@1.4.0';
   
   // Initialize router
   const router = new Router({
     rootElement: '#app',
-    transition: transitions.fade({ duration: 150 })
+    transition: transitions.fade({ duration: 150 }),
+    renderer: renderer.createRenderer()
   });
   
   // Define routes...
@@ -49,12 +51,13 @@ For browser environments, you can use CDNs to import the router directly without
 
 ```html
 <script type="module">
-  import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.0.3/dist/index.esm.js';
+  import { Router, transitions, renderer } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.4.0/dist/index.esm.js';
   
   // Initialize router
   const router = new Router({
     rootElement: '#app',
-    transition: transitions.fade({ duration: 150 })
+    transition: transitions.fade({ duration: 150 }),
+    renderer: renderer.createRenderer()
   });
   
   // Define routes...
@@ -65,14 +68,13 @@ For browser environments, you can use CDNs to import the router directly without
 
 ```javascript
 // Using npm package
-// Using npm package
 import { Router, transitions } from '@profullstack/spa-router';
 
 // Or using CDN
-// import { Router, transitions } from 'https://esm.sh/@profullstack/spa-router@1.0.3';
+// import { Router, transitions } from 'https://esm.sh/@profullstack/spa-router@1.4.0';
 
 // Or using jsDelivr
-// import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.0.3/dist/index.esm.js';
+// import { Router, transitions } from 'https://cdn.jsdelivr.net/npm/@profullstack/spa-router@1.4.0/dist/index.esm.js';
 
 // Initialize router
 const router = new Router({
@@ -109,6 +111,38 @@ import { Router, transitions } from '@profullstack/spa-router';
 const router = new Router({
   rootElement: '#app',
   transition: transitions.slide({ direction: 'left', duration: 300 })
+});
+```
+
+### Enhanced Renderer
+
+The router includes an enhanced renderer that supports component preservation and translations:
+
+```javascript
+import { Router, transitions, renderer } from '@profullstack/spa-router';
+
+// Create a custom renderer with translation support
+const customRenderer = renderer.createRenderer({
+  // Function to translate a container
+  translateContainer: (container) => {
+    // Your translation logic here
+    container.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      el.textContent = translate(key);
+    });
+  },
+  
+  // Function to apply RTL direction to document
+  applyRTLToDocument: () => {
+    // Your RTL logic here
+    document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+  }
+});
+
+const router = new Router({
+  rootElement: '#app',
+  transition: transitions.fade({ duration: 300 }),
+  renderer: customRenderer
 });
 ```
 
@@ -272,6 +306,7 @@ app.listen(PORT, () => {
 
 - `rootElement`: CSS selector for the root element where content will be rendered
 - `transition`: Transition effect to use for page changes
+- `renderer`: Custom renderer function for content rendering
 - `errorHandler`: Custom 404 error handler
 
 #### Methods
@@ -291,6 +326,11 @@ app.listen(PORT, () => {
 - `slide(options)`: Slide transition
 - `none()`: No transition
 - `custom(fn)`: Custom transition function
+
+### Renderer
+
+- `createRenderer(options)`: Create a custom renderer with component preservation and translation support
+- `createErrorHandler(options)`: Create a custom error handler
 
 ## License
 
