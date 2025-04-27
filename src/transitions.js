@@ -21,6 +21,7 @@ export const none = () => {
  */
 export const fade = (options = {}) => {
   const duration = options.duration || 150;
+  const onComplete = options.onComplete || (() => {});
   
   return async (oldContent, newContent, rootElement) => {
     return new Promise((resolve) => {
@@ -58,9 +59,30 @@ export const fade = (options = {}) => {
           if (document.body.contains(transitionOverlay)) {
             document.body.removeChild(transitionOverlay);
           }
+          
+          // Call the onComplete callback
+          onComplete();
+          
+          // Clean up any other transition overlays that might be stuck
+          const overlays = document.querySelectorAll('.transition-overlay');
+          overlays.forEach(overlay => {
+            if (document.body.contains(overlay) && overlay !== transitionOverlay) {
+              console.log('Removing stale transition overlay');
+              document.body.removeChild(overlay);
+            }
+          });
+          
           resolve();
         }, duration);
       }, duration);
+      
+      // Safety timeout to ensure overlay is removed even if something goes wrong
+      setTimeout(() => {
+        if (document.body.contains(transitionOverlay)) {
+          console.log('Safety timeout: removing transition overlay');
+          document.body.removeChild(transitionOverlay);
+        }
+      }, duration * 3);
     });
   };
 };

@@ -229,6 +229,21 @@ export class Router {
         
         // Apply transition
         await this.transition(oldContent, errorContent, rootElement);
+        
+        // Ensure any transition overlays are removed
+        setTimeout(() => {
+          const overlays = document.querySelectorAll('.transition-overlay');
+          overlays.forEach(overlay => {
+            if (document.body.contains(overlay)) {
+              document.body.removeChild(overlay);
+            }
+          });
+          
+          // Dispatch a custom event to signal that the error page has been rendered
+          document.dispatchEvent(new CustomEvent('error-page-rendered', {
+            detail: { path }
+          }));
+        }, 100);
       }
     } catch (error) {
       console.error('Error rendering route:', error);
