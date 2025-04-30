@@ -61,18 +61,63 @@ export async function executeInlineScripts(doc) {
         if (scriptContent) {
           // Replace DOMContentLoaded event listeners with immediate execution
           // This is needed because DOMContentLoaded has already fired in SPA context
-          const domContentLoadedRegex = new RegExp(
-            'document\\.addEventListener\\([\'"]DOMContentLoaded[\'"],\\s*(?:function\\s*\\(\\)\\s*\\{([\\s\\S]*?)\\}\\)|(?:\\(\\)\\s*=>\\s*\\{([\\s\\S]*?)\\}\\)|(.*?))',
-            'g'
-          );
+          console.log('Checking for DOMContentLoaded event listeners in script');
+          
+          // More comprehensive regex to match various DOMContentLoaded patterns
+          const domContentLoadedRegex = /document\.addEventListener\(['"]DOMContentLoaded['"],\s*((?:function\s*\([^)]*\)\s*\{[\s\S]*?\})|(?:\([^)]*\)\s*=>\s*\{[\s\S]*?\})|(?:[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*))/g;
+          
+          // Log the original script content for debugging
+          console.log('Original script content:', scriptContent.substring(0, 100) + '...');
+          
+          // First, check if we have any matches
+          const hasMatches = domContentLoadedRegex.test(scriptContent);
+          console.log('DOMContentLoaded matches found:', hasMatches);
+          
+          // Reset regex lastIndex
+          domContentLoadedRegex.lastIndex = 0;
           
           scriptContent = scriptContent.replace(
             domContentLoadedRegex,
-            function(match, fn1, fn2, fn3) {
-              const fnBody = fn1 || fn2 || fn3;
+            function(match, fnContent) {
+              console.log('Found DOMContentLoaded match:', match.substring(0, 50) + '...');
+              console.log('Function content:', fnContent.substring(0, 50) + '...');
+              
+              // If it's a named function reference, we need to call it directly
+              if (/^[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/.test(fnContent)) {
+                console.log('Converting named function DOMContentLoaded to immediate execution');
+                return `/* Converted from DOMContentLoaded */ (${fnContent})();`;
+              }
+              
+              // For anonymous functions or arrow functions
+              console.log('Converting anonymous/arrow function DOMContentLoaded to immediate execution');
+              return `/* Converted from DOMContentLoaded */ (function() {
+                try {
+                  ${fnContent.replace(/^\s*function\s*\([^)]*\)\s*\{|\(\s*\)\s*=>\s*\{|\{/, '').replace(/\}\s*$/, '')}
+                } catch(e) {
+                  console.error('Error executing converted DOMContentLoaded handler:', e);
+                }
+              })();`;
+            }
+          );
+          
+          // Also handle any remaining DOMContentLoaded listeners with event parameter
+          const domContentLoadedWithEventRegex = /document\.addEventListener\(['"]DOMContentLoaded['"],\s*(?:function\s*\(\s*(?:e|event|evt)\s*\)\s*\{([\s\S]*?)\}|(?:\(\s*(?:e|event|evt)\s*\)\s*=>\s*\{([\s\S]*?)\}))/g;
+          
+          scriptContent = scriptContent.replace(
+            domContentLoadedWithEventRegex,
+            function(match, fn1, fn2) {
+              const fnBody = fn1 || fn2;
               if (fnBody) {
-                console.log('Converting DOMContentLoaded event listener to immediate execution');
-                return `/* Converted from DOMContentLoaded */ (function() {${fnBody}})();`;
+                console.log('Converting DOMContentLoaded with event parameter to immediate execution');
+                return `/* Converted from DOMContentLoaded with event */ (function() {
+                  try {
+                    // Create a mock event object
+                    const event = new Event('DOMContentLoaded');
+                    ${fnBody}
+                  } catch(e) {
+                    console.error('Error executing converted DOMContentLoaded handler with event:', e);
+                  }
+                })();`;
               }
               return match;
             }
