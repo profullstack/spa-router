@@ -49,7 +49,18 @@ export const fade = (options = {}) => {
       // Wait for the fade-in to complete
       setTimeout(() => {
         // Replace the content
-        rootElement.innerHTML = newContent;
+        if (newContent instanceof DocumentFragment) {
+          // Clear the root element
+          rootElement.innerHTML = '';
+          // Append the DocumentFragment
+          rootElement.appendChild(newContent.cloneNode(true));
+        } else if (typeof newContent === 'string') {
+          // Set the HTML content
+          rootElement.innerHTML = newContent;
+        } else {
+          console.error('Unsupported content type:', typeof newContent);
+          rootElement.innerHTML = String(newContent);
+        }
         
         // Fade out the overlay
         transitionOverlay.style.opacity = '0';
@@ -108,7 +119,14 @@ export const slide = (options = {}) => {
       oldContainer.style.width = '100%';
       oldContainer.style.height = '100%';
       oldContainer.style.transition = `transform ${duration}ms ease-in-out`;
-      oldContainer.innerHTML = oldContent;
+      
+      // Set old content
+      if (typeof oldContent === 'string') {
+        oldContainer.innerHTML = oldContent;
+      } else {
+        console.warn('Old content is not a string, using empty content');
+        oldContainer.innerHTML = '';
+      }
       
       // Create a container for the new content
       const newContainer = document.createElement('div');
@@ -118,7 +136,16 @@ export const slide = (options = {}) => {
       newContainer.style.width = '100%';
       newContainer.style.height = '100%';
       newContainer.style.transition = `transform ${duration}ms ease-in-out`;
-      newContainer.innerHTML = newContent;
+      
+      // Set new content
+      if (newContent instanceof DocumentFragment) {
+        newContainer.appendChild(newContent.cloneNode(true));
+      } else if (typeof newContent === 'string') {
+        newContainer.innerHTML = newContent;
+      } else {
+        console.error('Unsupported content type:', typeof newContent);
+        newContainer.innerHTML = String(newContent);
+      }
       
       // Set initial positions
       let initialTransform = '';
@@ -159,7 +186,20 @@ export const slide = (options = {}) => {
         
         // Clean up after the transition
         setTimeout(() => {
-          rootElement.innerHTML = newContent;
+          // Clear the root element
+          rootElement.innerHTML = '';
+          
+          // Add the new content
+          if (newContent instanceof DocumentFragment) {
+            rootElement.appendChild(newContent.cloneNode(true));
+          } else if (typeof newContent === 'string') {
+            rootElement.innerHTML = newContent;
+          } else {
+            console.error('Unsupported content type:', typeof newContent);
+            rootElement.innerHTML = String(newContent);
+          }
+          
+          // Reset styles
           rootElement.style.position = '';
           rootElement.style.overflow = '';
           resolve();
