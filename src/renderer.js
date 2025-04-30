@@ -37,6 +37,8 @@ export function createRenderer(options = {}) {
     // Handle scripts if enabled
     let scriptExecutor;
     let moduleScripts = [];
+    let scriptElements = [];
+    
     if (handleScripts) {
       // Extract module scripts but don't execute them yet
       // We'll store them to execute after the DOM is updated
@@ -45,13 +47,42 @@ export function createRenderer(options = {}) {
       // Get the script executor function to be called after content is added to DOM
       scriptExecutor = await executeInlineScripts(doc);
       
-      // Only filter out script tags if keepScripts is false
-      if (!keepScripts) {
+      // If keepScripts is true, collect all script elements to be properly inserted later
+      if (keepScripts) {
+        console.log('Collecting script tags to properly insert them later');
+        scriptElements = Array.from(doc.querySelectorAll('script')).map(script => {
+          // Create a clone of the script element
+          const newScript = document.createElement('script');
+          
+          // Copy all attributes
+          Array.from(script.attributes).forEach(attr => {
+            newScript.setAttribute(attr.name, attr.value);
+          });
+          
+          // Copy the content
+          newScript.textContent = script.textContent;
+          
+          // Remove the original script from the DOM
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+          
+          return newScript;
+        });
+        
+        console.log(`Collected ${scriptElements.length} script elements`);
+      } else {
         // Filter out script tags from the content
         const bodyWithoutScripts = filterScriptTags(doc.body, false);
-        doc.body.innerHTML = bodyWithoutScripts.innerHTML;
-      } else {
-        console.log('Keeping script tags in content as requested');
+        
+        // Clear the body and append each child individually
+        while (doc.body.firstChild) {
+          doc.body.removeChild(doc.body.firstChild);
+        }
+        
+        Array.from(bodyWithoutScripts.children).forEach(child => {
+          doc.body.appendChild(child);
+        });
       }
     }
     
@@ -110,6 +141,30 @@ export function createRenderer(options = {}) {
       if (scriptExecutor) {
         console.log('Executing inline scripts');
         scriptExecutor(newContainer);
+      }
+      
+      // Insert collected script elements if keepScripts is true
+      if (scriptElements && scriptElements.length > 0) {
+        console.log(`Inserting ${scriptElements.length} script elements into the DOM`);
+        scriptElements.forEach(script => {
+          if (script.type === 'module') {
+            console.log(`Inserting module script: ${script.src || 'inline'}`);
+          } else {
+            console.log(`Inserting regular script: ${script.src || 'inline'}`);
+          }
+          
+          // If it's a src script, ensure the URL is absolute
+          if (script.src && !script.src.startsWith('http://') && !script.src.startsWith('https://')) {
+            const baseUrl = window.location.origin;
+            const absoluteSrc = script.src.startsWith('/')
+              ? `${baseUrl}${script.src}`
+              : `${baseUrl}/${script.src}`;
+            script.src = absoluteSrc;
+          }
+          
+          // Append to the document to execute it
+          document.head.appendChild(script);
+        });
       }
       
       // Now that the DOM is updated, import and execute module scripts
