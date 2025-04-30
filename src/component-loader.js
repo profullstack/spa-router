@@ -77,8 +77,106 @@ export function filterScriptTags(element, keepScripts = false) {
   return tempDiv;
 }
 
+/**
+ * Extracts all script tags from a document and creates new script elements
+ * that will be executed when added to the DOM
+ * @param {Document} doc - Parsed HTML document
+ * @returns {Array<HTMLScriptElement>} - Array of new script elements
+ */
+export function extractAndCloneScripts(doc) {
+  // Get all script tags from the document
+  const scriptTags = Array.from(doc.querySelectorAll('script'));
+  
+  if (scriptTags.length > 0) {
+    console.log(`Found ${scriptTags.length} script tags to clone`);
+  }
+  
+  // Create new script elements with the same attributes and content
+  return scriptTags.map(oldScript => {
+    const newScript = document.createElement('script');
+    
+    // Copy all attributes
+    Array.from(oldScript.attributes).forEach(attr => {
+      newScript.setAttribute(attr.name, attr.value);
+    });
+    
+    // Copy the content
+    newScript.textContent = oldScript.textContent;
+    
+    // If it's a src script, ensure the URL is absolute
+    if (newScript.src && !newScript.src.startsWith('http://') && !newScript.src.startsWith('https://')) {
+      const baseUrl = window.location.origin;
+      const absoluteSrc = newScript.src.startsWith('/')
+        ? `${baseUrl}${newScript.src}`
+        : `${baseUrl}/${newScript.src}`;
+      newScript.src = absoluteSrc;
+    }
+    
+    return newScript;
+  });
+}
+
+/**
+ * Creates a document fragment from HTML content and ensures scripts are properly handled
+ * @param {Document} doc - Parsed HTML document
+ * @returns {DocumentFragment} - Document fragment with content and scripts that will execute
+ */
+export function createFragmentWithScripts(doc) {
+  // Create a fragment to hold the content
+  const fragment = document.createDocumentFragment();
+  
+  // Clone all children from the body
+  Array.from(doc.body.children).forEach(child => {
+    // Skip script tags, we'll handle them separately
+    if (child.tagName !== 'SCRIPT') {
+      fragment.appendChild(child.cloneNode(true));
+    }
+  });
+  
+  // Extract and clone script tags
+  const scriptElements = extractAndCloneScripts(doc);
+  
+  // Add the script elements to the fragment
+  scriptElements.forEach(script => {
+    fragment.appendChild(script);
+  });
+  
+  // Extract module script sources
+  const moduleScripts = extractModuleScriptSources(doc);
+  
+  // Create and add module scripts to the fragment
+  if (moduleScripts && moduleScripts.length > 0) {
+    console.log(`Adding ${moduleScripts.length} module scripts to the fragment`);
+    
+    moduleScripts.forEach(src => {
+      // Create a new script element
+      const script = document.createElement('script');
+      script.type = 'module';
+      
+      // Convert to absolute URL if needed
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        script.src = src;
+      } else {
+        // For local scripts, create absolute URL based on current origin
+        const baseUrl = window.location.origin;
+        const absoluteSrc = src.startsWith('/')
+          ? `${baseUrl}${src}`
+          : `${baseUrl}/${src}`;
+        script.src = absoluteSrc;
+      }
+      
+      console.log(`Adding module script: ${script.src}`);
+      fragment.appendChild(script);
+    });
+  }
+  
+  return fragment;
+}
+
 export default {
   extractModuleScriptSources,
   executeInlineScripts,
-  filterScriptTags
+  filterScriptTags,
+  extractAndCloneScripts,
+  createFragmentWithScripts
 };
