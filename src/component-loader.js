@@ -10,8 +10,15 @@
  * @returns {string[]} - Array of script sources
  */
 export function extractModuleScriptSources(doc) {
-  // Extract script tags for automatic importing
-  const scriptTags = Array.from(doc.body.querySelectorAll('script[type="module"]'));
+  // Extract script tags from both body and the entire document
+  // This ensures we catch scripts at the root level of HTML fragments
+  const bodyScriptTags = Array.from(doc.body.querySelectorAll('script[type="module"]'));
+  const allScriptTags = Array.from(doc.querySelectorAll('script[type="module"]'));
+  
+  // Combine and deduplicate script tags
+  const scriptTags = [...new Set([...bodyScriptTags, ...allScriptTags])];
+  
+  // Extract src attributes
   const scriptSources = scriptTags.map(script => script.getAttribute('src')).filter(src => src);
   
   if (scriptSources.length > 0) {
