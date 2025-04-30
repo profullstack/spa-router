@@ -71,7 +71,7 @@ export function filterScriptTags(element, keepScripts = false) {
 }
 
 export default {
-  detectAndImportModules,
+  extractModuleScriptSources,
   executeInlineScripts,
   filterScriptTags
 };
