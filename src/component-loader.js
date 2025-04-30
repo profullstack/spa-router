@@ -59,15 +59,14 @@ export async function executeInlineScripts(doc) {
         let scriptContent = script.textContent.trim();
         
         if (scriptContent) {
+          console.log('Processing inline script with length:', scriptContent.length);
+          
           // Replace DOMContentLoaded event listeners with immediate execution
           // This is needed because DOMContentLoaded has already fired in SPA context
           console.log('Checking for DOMContentLoaded event listeners in script');
           
           // More comprehensive regex to match various DOMContentLoaded patterns
           const domContentLoadedRegex = /document\.addEventListener\(['"]DOMContentLoaded['"],\s*((?:function\s*\([^)]*\)\s*\{[\s\S]*?\})|(?:\([^)]*\)\s*=>\s*\{[\s\S]*?\})|(?:[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*))/g;
-          
-          // Log the original script content for debugging
-          console.log('Original script content:', scriptContent.substring(0, 100) + '...');
           
           // First, check if we have any matches
           const hasMatches = domContentLoadedRegex.test(scriptContent);
@@ -80,7 +79,6 @@ export async function executeInlineScripts(doc) {
             domContentLoadedRegex,
             function(match, fnContent) {
               console.log('Found DOMContentLoaded match:', match.substring(0, 50) + '...');
-              console.log('Function content:', fnContent.substring(0, 50) + '...');
               
               // If it's a named function reference, we need to call it directly
               if (/^[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/.test(fnContent)) {
@@ -123,26 +121,31 @@ export async function executeInlineScripts(doc) {
             }
           );
           
-          // Create a new script element to execute the code in the global context
-          const newScript = document.createElement('script');
-          
-          // Copy attributes from the original script
-          Array.from(script.attributes).forEach(attr => {
-            if (attr.name !== 'src') { // Skip src attribute if it exists
-              newScript.setAttribute(attr.name, attr.value);
+          // Use Function constructor to execute the script in the global scope
+          // This is more reliable than appending a script element to the DOM
+          console.log('Executing script using Function constructor');
+          try {
+            // Create a new Function from the script content and execute it immediately
+            const scriptFunction = new Function(scriptContent);
+            scriptFunction();
+            console.log('Script executed successfully');
+          } catch (execError) {
+            console.error('Error executing script with Function constructor:', execError);
+            console.error('Script content that failed:', scriptContent.substring(0, 200) + '...');
+            
+            // Fallback to eval as a last resort
+            console.log('Falling back to eval...');
+            try {
+              eval(scriptContent);
+              console.log('Script executed successfully with eval');
+            } catch (evalError) {
+              console.error('Error executing script with eval:', evalError);
             }
-          });
-          
-          newScript.textContent = scriptContent;
-          document.head.appendChild(newScript);
-          
-          // Remove the script after execution to prevent memory leaks
-          setTimeout(() => {
-            document.head.removeChild(newScript);
-          }, 0);
+          }
         }
       } catch (error) {
-        console.error('Error executing inline script:', error);
+        console.error('Error processing inline script:', error);
+        console.error('Error stack:', error.stack);
       }
     }
     
