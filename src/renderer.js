@@ -2,19 +2,22 @@
  * Enhanced renderer for SPA Router
  * Provides component preservation and translation support
  */
+import { detectAndImportModules, executeInlineScripts, filterScriptTags } from './component-loader.js';
 
 /**
  * Create a content renderer that handles translations and component preservation
  * @param {Object} options - Renderer options
  * @param {Function} options.translateContainer - Function to translate a container
  * @param {Function} options.applyRTLToDocument - Function to apply RTL direction to document
+ * @param {Boolean} options.handleScripts - Whether to handle scripts in content (default: true)
  * @returns {Function} Renderer function
  */
 export function createRenderer(options = {}) {
   const translateContainer = options.translateContainer || ((container) => {});
   const applyRTLToDocument = options.applyRTLToDocument || (() => {});
+  const handleScripts = options.handleScripts !== false; // Default to true
 
-  return (content, element) => {
+  return async (content, element) => {
     // Create a new container with absolute positioning (off-screen)
     const newContainer = document.createElement('div');
     newContainer.style.position = 'absolute';
@@ -28,6 +31,19 @@ export function createRenderer(options = {}) {
     // Parse the content into DOM
     const parser = new DOMParser();
     const doc = parser.parseFromString(content, 'text/html');
+    
+    // Handle scripts if enabled
+    if (handleScripts) {
+      // Import any module scripts
+      await detectAndImportModules(doc);
+      
+      // Execute any inline scripts
+      await executeInlineScripts(doc);
+      
+      // Filter out script tags from the content
+      const bodyWithoutScripts = filterScriptTags(doc.body);
+      doc.body.innerHTML = bodyWithoutScripts.innerHTML;
+    }
     
     // Get all existing web components in the current DOM to preserve
     const existingComponents = {};
