@@ -1,73 +1,24 @@
 /**
  * Component Loader Utility
- * 
+ *
  * Handles automatic detection and loading of web components from HTML content
  */
 
 /**
- * Detects and imports module scripts from HTML content
+ * Extracts module script sources from HTML content
  * @param {Document} doc - Parsed HTML document
- * @returns {Promise<string[]>} - Array of imported script paths
+ * @returns {string[]} - Array of script sources
  */
-export async function detectAndImportModules(doc) {
+export function extractModuleScriptSources(doc) {
   // Extract script tags for automatic importing
   const scriptTags = Array.from(doc.body.querySelectorAll('script[type="module"]'));
   const scriptSources = scriptTags.map(script => script.getAttribute('src')).filter(src => src);
   
   if (scriptSources.length > 0) {
-    console.log(`Found ${scriptSources.length} module scripts to import automatically:`, scriptSources);
-    
-    // Get the base URL of the current application
-    const baseUrl = window.location.origin;
-    console.log(`Base URL for script resolution: ${baseUrl}`);
-    
-    // Process all scripts
-    const importPromises = scriptSources.map(src => {
-      // Only use dynamic import for fully qualified external URLs (starting with http or https)
-      if (src.startsWith('http://') || src.startsWith('https://')) {
-        console.log(`Importing external module: ${src}`);
-        // Dynamically import the external script
-        return import(src)
-          .catch(error => {
-            console.error(`Error automatically importing external script ${src}:`, error);
-            return null; // Return null for failed imports
-          });
-      } else {
-        // For local scripts, create a script element with absolute URL and append it to the document
-        // Convert the src to an absolute URL based on the current application's origin
-        const absoluteSrc = src.startsWith('/')
-          ? `${baseUrl}${src}`
-          : `${baseUrl}/${src}`;
-        
-        console.log(`Loading local script with absolute URL: ${absoluteSrc}`);
-        
-        return new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.type = 'module';
-          script.src = absoluteSrc;
-          script.onload = () => {
-            console.log(`Successfully loaded script: ${absoluteSrc}`);
-            resolve();
-          };
-          script.onerror = (err) => {
-            console.error(`Error loading local script ${absoluteSrc}:`, err);
-            reject(err);
-          };
-          document.head.appendChild(script);
-        }).catch(error => {
-          console.error(`Error loading local script ${src}:`, error);
-          return null;
-        });
-      }
-    });
-    
-    // Wait for all imports to complete
-    await Promise.all(importPromises);
-    
-    return scriptSources;
+    console.log(`Found ${scriptSources.length} module scripts:`, scriptSources);
   }
   
-  return [];
+  return scriptSources;
 }
 
 /**

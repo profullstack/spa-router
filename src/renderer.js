@@ -2,7 +2,7 @@
  * Enhanced renderer for SPA Router
  * Provides component preservation and translation support
  */
-import { detectAndImportModules, executeInlineScripts, filterScriptTags } from './component-loader.js';
+import { extractModuleScriptSources, executeInlineScripts, filterScriptTags } from './component-loader.js';
 
 /**
  * Create a content renderer that handles translations and component preservation
@@ -40,12 +40,7 @@ export function createRenderer(options = {}) {
     if (handleScripts) {
       // Extract module scripts but don't execute them yet
       // We'll store them to execute after the DOM is updated
-      const scriptTags = Array.from(doc.body.querySelectorAll('script[type="module"]'));
-      moduleScripts = scriptTags.map(script => script.getAttribute('src')).filter(src => src);
-      
-      if (moduleScripts.length > 0) {
-        console.log(`Found ${moduleScripts.length} module scripts to import after DOM update:`, moduleScripts);
-      }
+      moduleScripts = extractModuleScriptSources(doc);
       
       // Get the script executor function to be called after content is added to DOM
       scriptExecutor = await executeInlineScripts(doc);
