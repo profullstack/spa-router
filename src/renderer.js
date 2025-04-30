@@ -36,9 +36,16 @@ export function createRenderer(options = {}) {
     
     // Handle scripts if enabled
     let scriptExecutor;
+    let moduleScripts = [];
     if (handleScripts) {
-      // Import any module scripts
-      await detectAndImportModules(doc);
+      // Extract module scripts but don't execute them yet
+      // We'll store them to execute after the DOM is updated
+      const scriptTags = Array.from(doc.body.querySelectorAll('script[type="module"]'));
+      moduleScripts = scriptTags.map(script => script.getAttribute('src')).filter(src => src);
+      
+      if (moduleScripts.length > 0) {
+        console.log(`Found ${moduleScripts.length} module scripts to import after DOM update:`, moduleScripts);
+      }
       
       // Get the script executor function to be called after content is added to DOM
       scriptExecutor = await executeInlineScripts(doc);
@@ -104,6 +111,38 @@ export function createRenderer(options = {}) {
         console.log('Executing inline scripts');
         scriptExecutor(newContainer);
       }
+      
+      // Now that the DOM is updated, import and execute module scripts
+      if (moduleScripts.length > 0) {
+        console.log('Importing module scripts after DOM update');
+        
+        // Get the base URL of the current application
+        const baseUrl = window.location.origin;
+        
+        // Import each module script
+        moduleScripts.forEach(src => {
+          // Create a new script element
+          const script = document.createElement('script');
+          script.type = 'module';
+          
+          // Convert to absolute URL if needed
+          if (src.startsWith('http://') || src.startsWith('https://')) {
+            script.src = src;
+          } else {
+            // For local scripts, create absolute URL based on current origin
+            const absoluteSrc = src.startsWith('/')
+              ? `${baseUrl}${src}`
+              : `${baseUrl}/${src}`;
+            script.src = absoluteSrc;
+          }
+          
+          console.log(`Loading module script: ${script.src}`);
+          document.head.appendChild(script);
+        });
+      }
+      
+      // Dispatch a custom event to notify that the SPA transition is complete
+      window.dispatchEvent(new CustomEvent('spa-transition-end'));
     }, 50);
   };
 }
