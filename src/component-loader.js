@@ -51,41 +51,20 @@ export async function detectAndImportModules(doc) {
  * @returns {number} - Number of executed inline scripts
  */
 export async function executeInlineScripts(doc) {
-  // We'll return this function to be called after the content is added to the DOM
   return function reexecuteInlineScripts(container) {
-    // Find all script tags in the container
-    const scripts = container.querySelectorAll('script');
-    let count = 0;
-    
-    console.log(`Found ${scripts.length} scripts to process`);
+    // Execute inline scripts only (ignore scripts with src)
+    const scripts = container.querySelectorAll('script:not([src])');
+    let count = scripts.length;
     
     scripts.forEach(oldScript => {
-      // Skip scripts with src attribute as they should load normally
-      if (oldScript.hasAttribute('src')) {
-        console.log('Skipping script with src attribute:', oldScript.getAttribute('src'));
-        return;
-      }
-      
-      count++;
-      console.log(`Processing inline script ${count}`);
-      
-      // Create a new script element
       const newScript = document.createElement('script');
-      
-      // Copy all attributes from the old script
       [...oldScript.attributes].forEach(attr =>
         newScript.setAttribute(attr.name, attr.value)
       );
-      
-      // Copy the content
       newScript.textContent = oldScript.textContent;
-      
-      // Replace the old script with the new one
-      // This will cause the browser to execute the script
-      oldScript.replaceWith(newScript);
+      oldScript.replaceWith(newScript); // Maintains position in DOM
     });
     
-    console.log(`Processed ${count} inline scripts`);
     return count;
   };
 }
