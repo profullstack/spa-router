@@ -17,17 +17,48 @@ export async function detectAndImportModules(doc) {
   if (scriptSources.length > 0) {
     console.log(`Found ${scriptSources.length} module scripts to import automatically:`, scriptSources);
     
-    // Import all scripts in parallel
+    // Get the base URL of the current application
+    const baseUrl = window.location.origin;
+    console.log(`Base URL for script resolution: ${baseUrl}`);
+    
+    // Process all scripts
     const importPromises = scriptSources.map(src => {
-      // Convert relative paths if needed
-      const scriptPath = src.startsWith('/') ? src : `/${src}`;
-      
-      // Dynamically import the script
-      return import(scriptPath)
-        .catch(error => {
-          console.error(`Error automatically importing script ${scriptPath}:`, error);
-          return null; // Return null for failed imports
+      // Only use dynamic import for fully qualified external URLs (starting with http or https)
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        console.log(`Importing external module: ${src}`);
+        // Dynamically import the external script
+        return import(src)
+          .catch(error => {
+            console.error(`Error automatically importing external script ${src}:`, error);
+            return null; // Return null for failed imports
+          });
+      } else {
+        // For local scripts, create a script element with absolute URL and append it to the document
+        // Convert the src to an absolute URL based on the current application's origin
+        const absoluteSrc = src.startsWith('/')
+          ? `${baseUrl}${src}`
+          : `${baseUrl}/${src}`;
+        
+        console.log(`Loading local script with absolute URL: ${absoluteSrc}`);
+        
+        return new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.type = 'module';
+          script.src = absoluteSrc;
+          script.onload = () => {
+            console.log(`Successfully loaded script: ${absoluteSrc}`);
+            resolve();
+          };
+          script.onerror = (err) => {
+            console.error(`Error loading local script ${absoluteSrc}:`, err);
+            reject(err);
+          };
+          document.head.appendChild(script);
+        }).catch(error => {
+          console.error(`Error loading local script ${src}:`, error);
+          return null;
         });
+      }
     });
     
     // Wait for all imports to complete
