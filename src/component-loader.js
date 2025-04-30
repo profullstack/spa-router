@@ -56,9 +56,28 @@ export async function executeInlineScripts(doc) {
     for (const script of inlineScripts) {
       try {
         // Get the script content
-        const scriptContent = script.textContent.trim();
+        let scriptContent = script.textContent.trim();
         
         if (scriptContent) {
+          // Replace DOMContentLoaded event listeners with immediate execution
+          // This is needed because DOMContentLoaded has already fired in SPA context
+          const domContentLoadedRegex = new RegExp(
+            'document\\.addEventListener\\([\'"]DOMContentLoaded[\'"],\\s*(?:function\\s*\\(\\)\\s*\\{([\\s\\S]*?)\\}\\)|(?:\\(\\)\\s*=>\\s*\\{([\\s\\S]*?)\\}\\)|(.*?))',
+            'g'
+          );
+          
+          scriptContent = scriptContent.replace(
+            domContentLoadedRegex,
+            function(match, fn1, fn2, fn3) {
+              const fnBody = fn1 || fn2 || fn3;
+              if (fnBody) {
+                console.log('Converting DOMContentLoaded event listener to immediate execution');
+                return `/* Converted from DOMContentLoaded */ (function() {${fnBody}})();`;
+              }
+              return match;
+            }
+          );
+          
           // Create a new script element to execute the code in the global context
           const newScript = document.createElement('script');
           
