@@ -30,9 +30,28 @@ export function createRenderer(options = {}) {
     newContainer.style.opacity = '0'; // Start hidden
     newContainer.style.zIndex = '1'; // Above the current content
     
-    // Parse the content into DOM
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(content, 'text/html');
+    // Handle different content types
+    let doc;
+    
+    if (content instanceof DocumentFragment) {
+      console.log('Received DocumentFragment as content');
+      // Create a temporary document to hold the fragment
+      doc = document.implementation.createHTMLDocument('');
+      
+      // Clone the fragment to avoid modifying the original
+      const clonedFragment = content.cloneNode(true);
+      
+      // Append the fragment to the document body
+      doc.body.appendChild(clonedFragment);
+    } else if (typeof content === 'string') {
+      console.log('Received string as content');
+      // Parse the content into DOM
+      const parser = new DOMParser();
+      doc = parser.parseFromString(content, 'text/html');
+    } else {
+      console.error('Unsupported content type:', typeof content);
+      throw new Error('Unsupported content type: ' + typeof content);
+    }
     
     // Handle scripts if enabled
     let scriptExecutor;
