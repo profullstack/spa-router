@@ -10,12 +10,14 @@ import { detectAndImportModules, executeInlineScripts, filterScriptTags } from '
  * @param {Function} options.translateContainer - Function to translate a container
  * @param {Function} options.applyRTLToDocument - Function to apply RTL direction to document
  * @param {Boolean} options.handleScripts - Whether to handle scripts in content (default: true)
+ * @param {Boolean} options.keepScripts - Whether to keep script tags in the output (default: false)
  * @returns {Function} Renderer function
  */
 export function createRenderer(options = {}) {
   const translateContainer = options.translateContainer || ((container) => {});
   const applyRTLToDocument = options.applyRTLToDocument || (() => {});
   const handleScripts = options.handleScripts !== false; // Default to true
+  const keepScripts = options.keepScripts === true; // Default to false
 
   return async (content, element) => {
     // Create a new container with absolute positioning (off-screen)
@@ -40,8 +42,8 @@ export function createRenderer(options = {}) {
       // Execute any inline scripts
       await executeInlineScripts(doc);
       
-      // Filter out script tags from the content
-      const bodyWithoutScripts = filterScriptTags(doc.body);
+      // Filter out script tags from the content (optionally keeping them)
+      const bodyWithoutScripts = filterScriptTags(doc.body, keepScripts);
       doc.body.innerHTML = bodyWithoutScripts.innerHTML;
     }
     

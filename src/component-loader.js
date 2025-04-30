@@ -91,14 +91,15 @@ export async function executeInlineScripts(doc) {
 /**
  * Filters out script tags from HTML content
  * @param {HTMLElement} element - Element to filter scripts from
- * @returns {DocumentFragment} - Document fragment with scripts removed
+ * @param {boolean} keepScripts - Whether to keep script tags in the output (default: false)
+ * @returns {DocumentFragment} - Document fragment with scripts removed or preserved
  */
-export function filterScriptTags(element) {
+export function filterScriptTags(element, keepScripts = false) {
   const tempDiv = document.createElement('div');
   
-  // Clone all child nodes except script tags
+  // Clone all child nodes, optionally excluding script tags
   Array.from(element.children).forEach(child => {
-    if (child.tagName !== 'SCRIPT') {
+    if (keepScripts || child.tagName !== 'SCRIPT') {
       tempDiv.appendChild(child.cloneNode(true));
     }
   });
