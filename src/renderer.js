@@ -45,9 +45,14 @@ export function createRenderer(options = {}) {
       // Get the script executor function to be called after content is added to DOM
       scriptExecutor = await executeInlineScripts(doc);
       
-      // Filter out script tags from the content (optionally keeping them)
-      const bodyWithoutScripts = filterScriptTags(doc.body, keepScripts);
-      doc.body.innerHTML = bodyWithoutScripts.innerHTML;
+      // Only filter out script tags if keepScripts is false
+      if (!keepScripts) {
+        // Filter out script tags from the content
+        const bodyWithoutScripts = filterScriptTags(doc.body, false);
+        doc.body.innerHTML = bodyWithoutScripts.innerHTML;
+      } else {
+        console.log('Keeping script tags in content as requested');
+      }
     }
     
     // Get all existing web components in the current DOM to preserve
