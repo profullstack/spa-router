@@ -35,12 +35,13 @@ export function createRenderer(options = {}) {
     const doc = parser.parseFromString(content, 'text/html');
     
     // Handle scripts if enabled
+    let scriptExecutor;
     if (handleScripts) {
       // Import any module scripts
       await detectAndImportModules(doc);
       
-      // Execute any inline scripts
-      await executeInlineScripts(doc);
+      // Get the script executor function to be called after content is added to DOM
+      scriptExecutor = await executeInlineScripts(doc);
       
       // Filter out script tags from the content (optionally keeping them)
       const bodyWithoutScripts = filterScriptTags(doc.body, keepScripts);
@@ -97,6 +98,12 @@ export function createRenderer(options = {}) {
       // Show the new content by changing position and opacity
       newContainer.style.position = 'relative';
       newContainer.style.opacity = '1';
+      
+      // Execute inline scripts if we have a script executor
+      if (scriptExecutor) {
+        console.log('Executing inline scripts');
+        scriptExecutor(newContainer);
+      }
     }, 50);
   };
 }

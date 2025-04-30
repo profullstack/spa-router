@@ -44,115 +44,50 @@ export async function detectAndImportModules(doc) {
  * @param {Document} doc - Parsed HTML document
  * @returns {Promise<number>} - Number of executed inline scripts
  */
+/**
+ * Execute inline scripts by replacing them with new script elements
+ * This forces the browser to execute the scripts
+ * @param {Document} doc - Parsed HTML document
+ * @returns {number} - Number of executed inline scripts
+ */
 export async function executeInlineScripts(doc) {
-  // Extract inline script tags (those without src attribute)
-  const inlineScripts = Array.from(doc.body.querySelectorAll('script'))
-    .filter(script => !script.hasAttribute('src'));
-  
-  if (inlineScripts.length > 0) {
-    console.log(`Found ${inlineScripts.length} inline scripts to execute`);
+  // We'll return this function to be called after the content is added to the DOM
+  return function reexecuteInlineScripts(container) {
+    // Find all script tags in the container
+    const scripts = container.querySelectorAll('script');
+    let count = 0;
     
-    // Execute each inline script in sequence
-    for (const script of inlineScripts) {
-      try {
-        // Get the script content
-        let scriptContent = script.textContent.trim();
-        
-        if (scriptContent) {
-          console.log('Processing inline script with length:', scriptContent.length);
-          
-          // Replace DOMContentLoaded event listeners with immediate execution
-          // This is needed because DOMContentLoaded has already fired in SPA context
-          console.log('Checking for DOMContentLoaded event listeners in script');
-          
-          // More comprehensive regex to match various DOMContentLoaded patterns
-          const domContentLoadedRegex = /document\.addEventListener\(['"]DOMContentLoaded['"],\s*((?:function\s*\([^)]*\)\s*\{[\s\S]*?\})|(?:\([^)]*\)\s*=>\s*\{[\s\S]*?\})|(?:[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*))/g;
-          
-          // First, check if we have any matches
-          const hasMatches = domContentLoadedRegex.test(scriptContent);
-          console.log('DOMContentLoaded matches found:', hasMatches);
-          
-          // Reset regex lastIndex
-          domContentLoadedRegex.lastIndex = 0;
-          
-          scriptContent = scriptContent.replace(
-            domContentLoadedRegex,
-            function(match, fnContent) {
-              console.log('Found DOMContentLoaded match:', match.substring(0, 50) + '...');
-              
-              // If it's a named function reference, we need to call it directly
-              if (/^[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/.test(fnContent)) {
-                console.log('Converting named function DOMContentLoaded to immediate execution');
-                return `/* Converted from DOMContentLoaded */ (${fnContent})();`;
-              }
-              
-              // For anonymous functions or arrow functions
-              console.log('Converting anonymous/arrow function DOMContentLoaded to immediate execution');
-              return `/* Converted from DOMContentLoaded */ (function() {
-                try {
-                  ${fnContent.replace(/^\s*function\s*\([^)]*\)\s*\{|\(\s*\)\s*=>\s*\{|\{/, '').replace(/\}\s*$/, '')}
-                } catch(e) {
-                  console.error('Error executing converted DOMContentLoaded handler:', e);
-                }
-              })();`;
-            }
-          );
-          
-          // Also handle any remaining DOMContentLoaded listeners with event parameter
-          const domContentLoadedWithEventRegex = /document\.addEventListener\(['"]DOMContentLoaded['"],\s*(?:function\s*\(\s*(?:e|event|evt)\s*\)\s*\{([\s\S]*?)\}|(?:\(\s*(?:e|event|evt)\s*\)\s*=>\s*\{([\s\S]*?)\}))/g;
-          
-          scriptContent = scriptContent.replace(
-            domContentLoadedWithEventRegex,
-            function(match, fn1, fn2) {
-              const fnBody = fn1 || fn2;
-              if (fnBody) {
-                console.log('Converting DOMContentLoaded with event parameter to immediate execution');
-                return `/* Converted from DOMContentLoaded with event */ (function() {
-                  try {
-                    // Create a mock event object
-                    const event = new Event('DOMContentLoaded');
-                    ${fnBody}
-                  } catch(e) {
-                    console.error('Error executing converted DOMContentLoaded handler with event:', e);
-                  }
-                })();`;
-              }
-              return match;
-            }
-          );
-          
-          // Use Function constructor to execute the script in the global scope
-          // This is more reliable than appending a script element to the DOM
-          console.log('Executing script using Function constructor');
-          try {
-            // Create a new Function from the script content and execute it immediately
-            const scriptFunction = new Function(scriptContent);
-            scriptFunction();
-            console.log('Script executed successfully');
-          } catch (execError) {
-            console.error('Error executing script with Function constructor:', execError);
-            console.error('Script content that failed:', scriptContent.substring(0, 200) + '...');
-            
-            // Fallback to eval as a last resort
-            console.log('Falling back to eval...');
-            try {
-              eval(scriptContent);
-              console.log('Script executed successfully with eval');
-            } catch (evalError) {
-              console.error('Error executing script with eval:', evalError);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error processing inline script:', error);
-        console.error('Error stack:', error.stack);
+    console.log(`Found ${scripts.length} scripts to process`);
+    
+    scripts.forEach(oldScript => {
+      // Skip scripts with src attribute as they should load normally
+      if (oldScript.hasAttribute('src')) {
+        console.log('Skipping script with src attribute:', oldScript.getAttribute('src'));
+        return;
       }
-    }
+      
+      count++;
+      console.log(`Processing inline script ${count}`);
+      
+      // Create a new script element
+      const newScript = document.createElement('script');
+      
+      // Copy all attributes from the old script
+      [...oldScript.attributes].forEach(attr =>
+        newScript.setAttribute(attr.name, attr.value)
+      );
+      
+      // Copy the content
+      newScript.textContent = oldScript.textContent;
+      
+      // Replace the old script with the new one
+      // This will cause the browser to execute the script
+      oldScript.replaceWith(newScript);
+    });
     
-    return inlineScripts.length;
-  }
-  
-  return 0;
+    console.log(`Processed ${count} inline scripts`);
+    return count;
+  };
 }
 
 /**
