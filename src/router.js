@@ -159,6 +159,18 @@ export class Router {
   async navigate(path, pushState = true) {
     console.log(`Router navigating to: ${path}`);
     
+    // Store the original path before normalization
+    const originalPath = path;
+    
+    // Normalize path
+    path = normalizePath(path);
+    
+    // Update history if needed - do this before any potential early returns
+    if (pushState) {
+      console.log('Updating history with path:', path);
+      window.history.pushState({ path }, document.title, path);
+    }
+    
     // Skip if already loading
     if (this.loading) {
       console.log('Already loading, skipping navigation');
@@ -168,18 +180,9 @@ export class Router {
     // Set loading state
     this.loading = true;
     
-    // Normalize path
-    path = normalizePath(path);
-    
     // Find matching route
     const route = this.findRoute(path);
     console.log('Found route:', route ? 'yes' : 'no');
-    
-    // Update history if needed
-    if (pushState) {
-      console.log('Updating history with path:', path);
-      window.history.pushState({ path }, document.title, path);
-    }
     
     // Get root element
     const rootElement = document.querySelector(this.rootElement);
@@ -222,13 +225,17 @@ export class Router {
         await next();
       } else {
         // Handle 404
-        console.log('Route not found, showing 404 page');
+        console.log('Route not found, showing 404 page for path:', originalPath);
         
-        // Call the error handler
-        const errorContent = this.errorHandler(path, rootElement);
-        
-        // Apply transition
-        await this.transition(oldContent, errorContent, rootElement);
+        try {
+          // Call the error handler with the original path
+          const errorContent = this.errorHandler(originalPath, rootElement);
+          
+          // Apply transition
+          await this.transition(oldContent, errorContent, rootElement);
+        } catch (error) {
+          console.error('Error in error handler or transition:', error);
+        }
         
         // Ensure any transition overlays are removed
         setTimeout(() => {

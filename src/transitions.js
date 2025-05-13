@@ -170,8 +170,6 @@ export const slide = (options = {}) => {
           break;
       }
       
-      newContainer.style.transform = initialTransform;
-      
       // Clear the root element and add both containers
       rootElement.innerHTML = '';
       rootElement.style.position = 'relative';
@@ -179,10 +177,16 @@ export const slide = (options = {}) => {
       rootElement.appendChild(oldContainer);
       rootElement.appendChild(newContainer);
       
-      // Trigger the transition
+      // Force a reflow to ensure the initial styles are applied
+      newContainer.getBoundingClientRect();
+      
+      // Set initial transform for the new container
+      newContainer.style.transform = 'translateX(0)';
+      
+      // Trigger the transition after a short delay
       setTimeout(() => {
+        // Set the transform for the old container
         oldContainer.style.transform = finalTransform;
-        newContainer.style.transform = 'translateX(0)';
         
         // Clean up after the transition
         setTimeout(() => {
