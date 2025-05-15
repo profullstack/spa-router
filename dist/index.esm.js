@@ -304,31 +304,22 @@ const slide = (options = {}) => {
         console.error('Unsupported content type:', typeof newContent);
         newContainer.innerHTML = String(newContent);
       }
-      
-      // Set initial positions
-      let initialTransform = '';
       let finalTransform = '';
       
       switch (direction) {
         case 'left':
-          initialTransform = 'translateX(100%)';
           finalTransform = 'translateX(-100%)';
           break;
         case 'right':
-          initialTransform = 'translateX(-100%)';
           finalTransform = 'translateX(100%)';
           break;
         case 'up':
-          initialTransform = 'translateY(100%)';
           finalTransform = 'translateY(-100%)';
           break;
         case 'down':
-          initialTransform = 'translateY(-100%)';
           finalTransform = 'translateY(100%)';
           break;
       }
-      
-      newContainer.style.transform = initialTransform;
       
       // Clear the root element and add both containers
       rootElement.innerHTML = '';
@@ -337,10 +328,16 @@ const slide = (options = {}) => {
       rootElement.appendChild(oldContainer);
       rootElement.appendChild(newContainer);
       
-      // Trigger the transition
+      // Force a reflow to ensure the initial styles are applied
+      newContainer.getBoundingClientRect();
+      
+      // Set initial transform for the new container
+      newContainer.style.transform = 'translateX(0)';
+      
+      // Trigger the transition after a short delay
       setTimeout(() => {
+        // Set the transform for the old container
         oldContainer.style.transform = finalTransform;
-        newContainer.style.transform = 'translateX(0)';
         
         // Clean up after the transition
         setTimeout(() => {
@@ -395,8 +392,103 @@ var transitions$1 = /*#__PURE__*/Object.freeze({
 });
 
 /**
+ * Logger utility for spa-router module
+ * 
+ * This provides consistent logging to help with debugging.
+ * It wraps console methods with module name prefixing and optional log levels.
+ */
+
+/**
+ * Create a logger instance for a specific component
+ * @param {string} componentName - Name of the component using this logger
+ * @returns {Object} - Logger object with log, info, warn, error, debug methods
+ */
+function createLogger(componentName) {
+  // Get log level from environment or default to 'info'
+  const LOG_LEVEL = (typeof process !== 'undefined' && process.env && process.env.LOG_LEVEL) || 
+                    (typeof localStorage !== 'undefined' && localStorage.getItem('LOG_LEVEL')) || 
+                    'info';
+  
+  // Log levels and their priorities
+  const LOG_LEVELS = {
+    error: 0,
+    warn: 1,
+    info: 2,
+    log: 3,
+    debug: 4
+  };
+
+  // Current log level priority
+  const currentLevelPriority = LOG_LEVELS[LOG_LEVEL] || LOG_LEVELS.info;
+  
+  // Module name for all logs from this module
+  const MODULE_NAME = 'spa-router';
+  
+  /**
+   * Generic log function that prefixes the module name
+   * @param {string} level - Log level (log, info, warn, error, debug)
+   * @param {Array} args - Arguments to log
+   */
+  function logWithLevel(level, ...args) {
+    // Check if this level should be logged based on current log level
+    if (LOG_LEVELS[level] <= currentLevelPriority) {
+      const prefix = componentName 
+        ? `[${MODULE_NAME}:${componentName}]` 
+        : `[${MODULE_NAME}]`;
+      console[level](prefix, ...args);
+    }
+  }
+  
+  // Return logger object with methods for each log level
+  return {
+    log: (...args) => logWithLevel('log', ...args),
+    info: (...args) => logWithLevel('info', ...args),
+    warn: (...args) => logWithLevel('warn', ...args),
+    error: (...args) => logWithLevel('error', ...args),
+    debug: (...args) => logWithLevel('debug', ...args),
+    
+    // Track method calls and execution times
+    trackMethod: (methodName, method) => {
+      return function(...args) {
+        const startTime = performance.now();
+        logWithLevel('debug', `${methodName} called with:`, ...args);
+        
+        try {
+          const result = method.apply(this, args);
+          
+          // Handle promises
+          if (result instanceof Promise) {
+            return result.then(value => {
+              const endTime = performance.now();
+              logWithLevel('debug', `${methodName} completed in ${endTime - startTime}ms`);
+              return value;
+            }).catch(error => {
+              logWithLevel('error', `${methodName} failed:`, error);
+              throw error;
+            });
+          }
+          
+          const endTime = performance.now();
+          logWithLevel('debug', `${methodName} completed in ${endTime - startTime}ms`);
+          return result;
+        } catch (error) {
+          logWithLevel('error', `${methodName} failed:`, error);
+          throw error;
+        }
+      };
+    }
+  };
+}
+
+// Create a default logger for the module
+const logger$1 = createLogger();
+
+/**
  * SPA Router using the History API
  */
+
+// Create a logger for the router component
+const logger = createLogger('router');
 
 /**
  * Router class for handling SPA navigation
@@ -411,6 +503,8 @@ class Router {
    * @param {Function} options.transition - Transition function
    */
   constructor(options = {}) {
+    logger.debug('Router constructor called with options:', options);
+    
     this.routes = {};
     this.rootElement = options.rootElement || '#app';
     this.errorHandler = options.errorHandler || this.defaultErrorHandler;
@@ -421,34 +515,37 @@ class Router {
     
     // Register initial routes if provided
     if (options.routes) {
+      logger.debug('Registering initial routes');
       this.registerRoutes(options.routes);
     }
     
     // Initialize
     this.init();
+    
+    logger.info('Router instance created');
   }
 
   /**
    * Initialize the router
    */
   init() {
-    console.log('Router initializing...');
+    logger.info('Router initializing...');
     
     // Handle initial route immediately if document is already loaded
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      console.log('Document already loaded, navigating to:', window.location.pathname);
+      logger.info('Document already loaded, navigating to:', window.location.pathname);
       this.navigate(window.location.pathname, false);
     }
     
     // Also handle when DOM is fully loaded
     window.addEventListener('DOMContentLoaded', () => {
-      console.log('DOMContentLoaded event, navigating to:', window.location.pathname);
+      logger.info('DOMContentLoaded event, navigating to:', window.location.pathname);
       this.navigate(window.location.pathname, false);
     });
     
     // Handle popstate events (browser back/forward)
     window.addEventListener('popstate', (e) => {
-      console.log('Popstate event, navigating to:', window.location.pathname);
+      logger.info('Popstate event, navigating to:', window.location.pathname);
       this.navigate(window.location.pathname, false);
     });
     
@@ -475,7 +572,7 @@ class Router {
       // Navigate to the link
       this.navigate(href);
       
-      console.log('Intercepted click on link:', href);
+      logger.debug('Intercepted click on link:', href);
     }, { capture: true }); // Use capture to get events before they reach the shadow DOM
   }
 
@@ -484,9 +581,11 @@ class Router {
    * @param {Object} routes - Route definitions
    */
   registerRoutes(routes) {
+    logger.debug('Registering routes:', Object.keys(routes));
     Object.entries(routes).forEach(([path, routeConfig]) => {
       this.addRoute(path, routeConfig);
     });
+    logger.info(`Registered ${Object.keys(routes).length} routes`);
   }
 
   /**
@@ -495,6 +594,8 @@ class Router {
    * @param {Object} routeConfig - Route configuration
    */
   addRoute(path, routeConfig) {
+    logger.debug('Adding route:', path);
+    
     // Convert path to regex for matching
     const { regex, paramNames } = pathToRegex(path);
     
@@ -505,6 +606,8 @@ class Router {
       paramNames,
       path
     };
+    
+    logger.debug('Route added:', path);
   }
 
   /**
@@ -551,34 +654,37 @@ class Router {
    * @param {boolean} pushState - Whether to push state to history
    */
   async navigate(path, pushState = true) {
-    console.log(`Router navigating to: ${path}`);
+    logger.info(`Router navigating to: ${path}`);
+    
+    // Store the original path before normalization
+    const originalPath = path;
+    
+    // Normalize path
+    path = normalizePath(path);
+    
+    // Update history if needed - do this before any potential early returns
+    if (pushState) {
+      logger.debug('Updating history with path:', path);
+      window.history.pushState({ path }, document.title, path);
+    }
     
     // Skip if already loading
     if (this.loading) {
-      console.log('Already loading, skipping navigation');
+      logger.warn('Already loading, skipping navigation');
       return;
     }
     
     // Set loading state
     this.loading = true;
     
-    // Normalize path
-    path = normalizePath(path);
-    
     // Find matching route
     const route = this.findRoute(path);
-    console.log('Found route:', route ? 'yes' : 'no');
-    
-    // Update history if needed
-    if (pushState) {
-      console.log('Updating history with path:', path);
-      window.history.pushState({ path }, document.title, path);
-    }
+    logger.debug('Found route:', route ? route.path : 'not found');
     
     // Get root element
     const rootElement = document.querySelector(this.rootElement);
     if (!rootElement) {
-      console.error(`Root element "${this.rootElement}" not found`);
+      logger.error(`Root element "${this.rootElement}" not found`);
       this.loading = false;
       return;
     }
@@ -616,13 +722,17 @@ class Router {
         await next();
       } else {
         // Handle 404
-        console.log('Route not found, showing 404 page');
+        logger.warn('Route not found, showing 404 page for path:', originalPath);
         
-        // Call the error handler
-        const errorContent = this.errorHandler(path, rootElement);
-        
-        // Apply transition
-        await this.transition(oldContent, errorContent, rootElement);
+        try {
+          // Call the error handler with the original path
+          const errorContent = this.errorHandler(originalPath, rootElement);
+          
+          // Apply transition
+          await this.transition(oldContent, errorContent, rootElement);
+        } catch (error) {
+          logger.error('Error in error handler or transition:', error);
+        }
         
         // Ensure any transition overlays are removed
         setTimeout(() => {
@@ -640,7 +750,7 @@ class Router {
         }, 100);
       }
     } catch (error) {
-      console.error('Error rendering route:', error);
+      logger.error('Error rendering route:', error);
       
       // Handle errors
       rootElement.innerHTML = `<div class="error">Error loading page: ${error.message}</div>`;
@@ -687,15 +797,15 @@ class Router {
     try {
       if (typeof route.view === 'function') {
         // If view is a function, call it with params
-        console.log('Calling view function with params:', route.params);
+        logger.debug('Calling view function with params:', route.params);
         content = await route.view(route.params);
       } else if (typeof route.view === 'string') {
         // If view is a string, treat it as HTML
-        console.log('Using string view');
+        logger.debug('Using string view');
         content = route.view;
       } else if (route.component) {
         // If route has a component, handle it
-        console.log('Creating component:', route.component);
+        logger.debug('Creating component:', route.component);
         
         if (typeof route.component === 'string') {
           // If component is a string, create the element
@@ -720,7 +830,7 @@ class Router {
         }
       } else {
         // Default to empty content
-        console.log('No view or component found, using empty content');
+        logger.warn('No view or component found, using empty content');
         content = '';
       }
       
@@ -729,11 +839,11 @@ class Router {
       
       // Call afterRender if provided
       if (route.afterRender) {
-        console.log('Calling afterRender function');
+        logger.debug('Calling afterRender function');
         try {
           route.afterRender(route.params);
         } catch (error) {
-          console.error('Error in afterRender:', error);
+          logger.error('Error in afterRender:', error);
         }
       }
       
@@ -753,7 +863,7 @@ class Router {
         }, 150);
       }
     } catch (error) {
-      console.error('Error rendering route content:', error);
+      logger.error('Error rendering route content:', error);
       throw error;
     }
   }
@@ -1263,6 +1373,9 @@ var renderer$1 = /*#__PURE__*/Object.freeze({
  */
 
 
+// Log module initialization
+logger$1.info('Initializing spa-router module');
+
 // Export a default object for UMD builds
 var index = {
   Router,
@@ -1272,5 +1385,8 @@ var index = {
   componentLoader: componentLoader$1
 };
 
-export { Router, componentLoader$1 as componentLoader, index as default, renderer$1 as renderer, transitions$1 as transitions, utils$1 as utils };
+// Log when the module is fully loaded
+logger$1.debug('spa-router module fully loaded');
+
+export { Router, componentLoader$1 as componentLoader, createLogger, index as default, logger$1 as logger, renderer$1 as renderer, transitions$1 as transitions, utils$1 as utils };
 //# sourceMappingURL=index.esm.js.map
